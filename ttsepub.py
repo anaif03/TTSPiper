@@ -13,7 +13,7 @@ from pydub.utils import which
 # Configurazione dei percorsi delle dipendenze
 PIPER_PATH = r"C:\piper\piper.exe"  # Percorso dell'eseguibile Piper
 PIPER_MODEL_PATH = r"C:\piper\it_IT-riccardo-x_low.onnx"  # Percorso del modello Piper
-FFMPEG_PATH = r"C:\piper\ffmpeg\bin\ffmpeg.exe"  # Percorso di ffmpeg
+FFMPEG_PATH = r"C:\path_to_your_ffmpeg\ffmpeg.exe"  # Percorso di ffmpeg
 
 # Configura pydub per usare il percorso corretto di ffmpeg
 AudioSegment.converter = FFMPEG_PATH
@@ -70,20 +70,28 @@ def convert_txt_to_wav(chapter_files, output_dir):
     print(f"Conversione da file di testo a WAV completata per {len(wav_files)} file.")
     return wav_files
 
-# 3. Funzione per convertire i file WAV in MP3 (uno dopo l'altro)
-def convert_wav_to_mp3(wav_files, output_dir):
+# 3. Funzione per convertire i file WAV in MP3 (uno dopo l'altro) e cancellare i file txt e wav
+def convert_wav_to_mp3_and_cleanup(wav_files, chapter_files):
     mp3_files = []
     
-    for wav_file in wav_files:
+    for wav_file, chapter_file in zip(wav_files, chapter_files):
         # Usa os.path.normpath per gestire correttamente i separatori di percorso
         mp3_file = os.path.normpath(wav_file.replace(".wav", ".mp3"))
         wav_file = os.path.normpath(wav_file)  # Normalizza il percorso del file WAV
+        chapter_file = os.path.normpath(chapter_file)  # Normalizza il percorso del file txt
         print(f"Sto convertendo WAV in MP3: {wav_file} -> {mp3_file}")  # Debug
         
         try:
             sound = AudioSegment.from_wav(wav_file)
             sound.export(mp3_file, format="mp3")
             mp3_files.append(mp3_file)
+
+            # Cancellare il file WAV e il file TXT
+            os.remove(wav_file)
+            print(f"File WAV cancellato: {wav_file}")
+            os.remove(chapter_file)
+            print(f"File TXT cancellato: {chapter_file}")
+
         except Exception as e:
             print(f"Errore nella conversione da WAV a MP3 per {wav_file}: {e}")
             continue
@@ -99,8 +107,8 @@ def convert_epub_to_audio(epub_file, output_dir):
     # 2. Convertire ogni file di testo in WAV
     wav_files = convert_txt_to_wav(chapter_files, output_dir)
     
-    # 3. Convertire ogni file WAV in MP3
-    convert_wav_to_mp3(wav_files, output_dir)
+    # 3. Convertire ogni file WAV in MP3 e cancellare i file txt e wav
+    convert_wav_to_mp3_and_cleanup(wav_files, chapter_files)
 
 # GUI per la selezione dei file e il monitoraggio del progresso
 def open_file_dialog():
@@ -124,4 +132,3 @@ def create_gui():
 
 if __name__ == "__main__":
     create_gui()
-
